@@ -1,0 +1,21 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        
+      {
+        "name": "Python: Debug alignment.py",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/subgraph_matching/alignment.py",
+        "args": [
+          "--query_path=faces/multigraph_0.p",
+          "--target_path=street/multigraph_street.p"
+        ],
+        "console": "integratedTerminal",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}"
+        },
+        "justMyCode": true
+      }
+    ]
+  }

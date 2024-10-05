@@ -231,7 +231,9 @@ def batch_nx_graphs(graphs, anchors=None):
         for anchor, g in zip(anchors, graphs):
             for v in g.nodes:
                 g.nodes[v]["node_feature"] = torch.tensor([float(v == anchor)])
-
+                # if anchor == v : print(g.nodes[v])
+                
+    # print(DSGraph(g))
     batch = Batch.from_data_list([DSGraph(g) for g in graphs])
     batch = augmenter.augment(batch)
     batch = batch.to(get_device())

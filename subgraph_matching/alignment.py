@@ -24,7 +24,7 @@ from torch_geometric.data import DataLoader
 from torch_geometric.datasets import TUDataset
 import torch_geometric.utils as pyg_utils
 import torch_geometric.nn as pyg_nn
-
+from tqdm import tqdm
 from common import data
 from common import models
 from common import utils
@@ -48,8 +48,8 @@ def gen_alignment_matrix(model, query, target, method_type="order"):
     """
 
     mat = np.zeros((len(query), len(target)))
-    for i, u in enumerate(query.nodes):
-        for j, v in enumerate(target.nodes):
+    for i, u in tqdm(enumerate(query.nodes), desc="get matrix"):
+        for j, v in tqdm(enumerate(target.nodes), desc="sub loop"):
             batch = utils.batch_nx_graphs([query, target], anchors=[u, v])
             embs = model.emb_model(batch)
             pred = model(embs[1].unsqueeze(0), embs[0].unsqueeze(0))
@@ -61,6 +61,22 @@ def gen_alignment_matrix(model, query, target, method_type="order"):
             mat[i][j] = raw_pred.item()
     return mat
 
+
+def retain_specific_edge_attributes(graph, attributes_to_keep):
+    for u, v, data in graph.edges(data=True):
+        keys_to_remove = [key for key in data if key not in attributes_to_keep]
+        for key in keys_to_remove:
+            del data[key]
+
+def convert_osmid_to_tensor(graph):
+    for u, v, data in graph.edges(data=True):
+        if 'osmid' in data:
+            osmid = data['osmid']
+            if isinstance(osmid, int):
+                data['osmid'] = torch.tensor([osmid], dtype=torch.long)
+            elif isinstance(osmid, list):
+                data['osmid'] = torch.tensor(osmid, dtype=torch.long)
+                
 def main():
     if not os.path.exists("plots/"):
         os.makedirs("plots/")
@@ -86,7 +102,14 @@ def main():
             target = pickle.load(f)
     else:
         target = nx.gnp_random_graph(16, 0.25)
-
+        
+    attributes = ['length']
+    retain_specific_edge_attributes(target,attributes)
+    retain_specific_edge_attributes(query, attributes)
+    
+    convert_osmid_to_tensor(target)
+    convert_osmid_to_tensor(query)
+    
     model = build_model(args)
     mat = gen_alignment_matrix(model, query, target,
         method_type=args.method_type)
